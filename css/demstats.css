@@ -1,0 +1,196 @@
+/*
+ * Dem Stats CSS stuff
+ * Released under the BSD-2 license.
+ */
+
+body { background: #eee; }
+#container {
+    width: 100%;
+    text-align: center;
+    font-family: 'Open Sans', sans-serif;
+}
+
+header
+{
+    color: #ddd;
+    font-size: 70px;
+    height: 300px;
+    padding-top: 180px;
+    background-image: url('bg.png');
+    background-repeat: no-repeat;
+}
+
+#subtitle
+{
+    color: #bbb;
+    font-size: 14px;
+    padding-left: 426px;
+    font-style: italic;
+}
+
+.canvas-small
+{
+    width: 400px;
+    height: 400px;
+}
+
+.canvas-big
+{
+    width: 568px;
+    height: 568px;
+}
+
+#row-container
+{
+    width: 968px;
+    margin: 0 auto;
+}
+
+.row
+{
+    color: #202020;
+    text-align: center;
+    margin-top: 80px;
+}
+
+.row-text
+{
+    font-size: 50px;
+    width: 800px;
+    margin: 0 auto;
+    margin-top: 120px;
+}
+
+.row-text-floated
+{
+    float: left;
+    width: 568px;
+}
+
+.row-text-no-canvas
+{
+    margin-top: 35px;
+}
+
+.row-sub
+{
+    width: 568px;
+    margin: 0 auto;
+}
+
+.row-sub-floated
+{
+    float: right;
+    width: 400px;
+    margin-bottom: 80px;
+}
+
+.row-sub-no-canvas
+{
+    font-size: 100px;
+}
+
+.spacer
+{
+    border-style: solid none none;
+    border-width: 1px 0 0;
+    border-color: #ccc;
+    height: 0;
+    margin: 80px 0;
+    clear: both;
+}
+
+.small
+{
+    font-size: 70px;
+}
+
+.row-chart {
+    opacity: 0;
+}
+
+@media (max-width: 767px)
+{
+    #row-container
+    {
+        width: auto;
+    }
+
+    header
+    {
+        height: auto;
+        padding-top: 0px;
+        font-size: 50px;
+    }
+
+    .row-sub, .row-text
+    {
+        width: auto;
+        margin-top: 0px;
+    }
+
+    .row-sub-floated, .row-text-floated
+    {
+        float: none;
+    }
+
+    canvas
+    {
+        max-width: 100%;
+        height: auto;
+    }
+
+    #subtitle
+    {
+        padding-left: 0px;
+        padding-bottom: 10px;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 991px)
+{
+    #row-container
+    {
+        width: 750px;
+    }
+
+    .row-sub-floated, .row-text-floated
+    {
+        float: none;
+    }
+
+    .row-sub, .row-text
+    {
+        width: auto;
+    }
+
+    header
+    {
+        height: 220px;
+        padding-top: 120px;
+    }
+}
+
+@media (min-width: 992px) and (max-width: 1199px)
+{
+    #row-container
+    {
+        width: 970px;
+    }
+    #isSmallScreen { display: none; }
+}
+
+@media (min-width: 1200px)
+{
+    #row-container
+    {
+        width: 1170px;
+    }
+
+    .row-text-floated
+    {
+        width: 700px;
+    }
+
+    #isSmallScreen { display: none; }
+}
