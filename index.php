@@ -171,7 +171,7 @@ $demstats->generateStats();
 <html>
     <head>
         <title><?=$demstats->getWebsiteTitle()?></title>
-        <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans" type="text/css">
+        <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans" type="text/css">
         <link rel="stylesheet" href="css/normalize.css" type="text/css">
         <link rel="stylesheet" href="css/demstats.css" media="screen" type="text/css">
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -226,7 +226,7 @@ $demstats->generateStats();
             <div id="chartdata-dayChart"><?=json_encode($demstats->getStats()->screenshots_per_day, JSON_HEX_TAG)?></div>
         </div>
         <span id="isSmallScreen"></span>
-        <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+        <script src="//code.jquery.com/jquery-2.0.3.min.js"></script>
         <script src="js/jquery-ui-1.10.3.custom.min.js"></script>
         <script src="js/jquery.inview.min.js"></script>
         <script src="js/Chart.min.js"></script>
