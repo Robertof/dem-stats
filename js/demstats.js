@@ -10,7 +10,7 @@
     DemStats.onPageReady = function() {
         var $header = $("header"), $window = $(window);
         // Parallax
-        _updateHeaderBasePosition.call ($header);
+        _updateHeaderBasePosition();
         // Events
         $("canvas").click (_onCanvasClicked);
         $header.mousemove (_onHeaderMouseMove).mouseout (_onHeaderMouseOut);
@@ -175,7 +175,7 @@
     function _updateHeaderBasePosition()
     {
         _header.basePos = -Math.round ((2000 - $(window).width()) / 2);
-        $(this).css ("background-position", _header.basePos + "px 0");
+        $("header").css ("background-position", _header.basePos + "px 0");
     }
     function _restoreHeaderPosition()
     {
