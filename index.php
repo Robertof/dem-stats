@@ -181,7 +181,8 @@ $demstats->generateStats();
         <div id="container">
             <header>
                 <?=$demstats->getWebsiteTitle()?>
-                <div id="subtitle">proudly powered by Dem Stats</div>
+
+                <div id="subtitle">proudly powered by <a href="https://github.com/Robertof/dem-stats">Dem Stats</a></div>
             </header>
             <div id="row-container">
                 <div class="row">
@@ -190,6 +191,7 @@ $demstats->generateStats();
                     </div>
                     <div class="row-sub row-sub-floated row-sub-no-canvas">
                         <?=$demstats->getStats()->total_files?>
+
                     </div>
                 </div>
                 <hr class="spacer">
@@ -199,6 +201,7 @@ $demstats->generateStats();
                     </div>
                     <div class="row-sub row-sub-floated row-sub-no-canvas small">
                         <?=$demstats->formatBytes ($demstats->getStats()->used_space, 1)?>
+
                     </div>
                 </div>
                 <hr class="spacer">
@@ -207,8 +210,9 @@ $demstats->generateStats();
                         Screenshots uploaded per month
                     </div>
                     <div class="row-sub row-sub-floated">
-                        <canvas id="monthChart" width="400" height="400" title="Click to expand"></canvas>
+                        <canvas id="monthChart" width="400" height="400"></canvas>
                     </div>
+                    <div class="animation-overlay"></div>
                 </div>
                 <hr class="spacer">
                 <div class="row row-chart">
@@ -216,8 +220,9 @@ $demstats->generateStats();
                         Screenshots uploaded per day
                     </div>
                     <div class="row-sub row-sub-floated">
-                        <canvas id="dayChart" width="400" height="400" title="Click to expand"></canvas>
+                        <canvas id="dayChart" width="400" height="400"></canvas>
                     </div>
+                    <div class="animation-overlay"></div>
                 </div>
             </div>
         </div>
@@ -226,10 +231,17 @@ $demstats->generateStats();
             <div id="chartdata-dayChart"><?=json_encode($demstats->getStats()->screenshots_per_day, JSON_HEX_TAG)?></div>
         </div>
         <span id="isSmallScreen"></span>
-        <script src="//code.jquery.com/jquery-2.0.3.min.js"></script>
-        <script src="js/jquery-ui-1.10.3.custom.min.js"></script>
-        <script src="js/jquery.inview.min.js"></script>
-        <script src="js/Chart.min.js"></script>
-        <script src="js/demstats.js"></script>
+        <script type="application/javascript">
+        var chartData = {
+            monthChart: <?=json_encode($demstats->getStats()->screenshots_per_month)?>,
+            dayChart: <?=json_encode($demstats->getStats()->screenshots_per_day)?>
+
+        };
+        </script>
+        <script src="//code.jquery.com/jquery-2.0.3.min.js" type="application/javascript"></script>
+        <script src="js/jquery-ui-1.10.3.custom.min.js" type="application/javascript"></script>
+        <script src="js/jquery.inview.min.js" type="application/javascript"></script>
+        <script src="js/Chart.min.js" type="application/javascript"></script>
+        <script src="js/demstats.js" type="application/javascript"></script>
     </body>
 </html>

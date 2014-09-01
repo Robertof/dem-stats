@@ -1,151 +1,204 @@
-var DemStats = {
-    baseHeaderPos: 0,
-    intervalRunning: false,
-    mouseInteracting: false,
-    header_lastX: 0,
-    header_lastY: 0,
-    months: [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ],
-    onPageReady: function() {
-        var header = $("header"), win = $(window);
-        // Parallax positioning
-        DemStats.baseHeaderPos = -Math.round ((2000 - $(window).width()) / 2);
-        header.css ('background-position', DemStats.baseHeaderPos + 'px 0');
-        // Chart management
-        //DemStats._drawGraph ("monthChart");
-        //DemStats._drawGraph ("dayChart");
+(function (DemStats) {
+    var MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ],
+        _header = {
+            basePos:          0,
+            lastX:            0,
+            lastY:            0,
+            animating:        false,
+            mouseInteracting: false,
+        }, _drawnGraphs = {};
+    DemStats.onPageReady = function() {
+        var $header = $("header"), $window = $(window);
+        // Parallax
+        _updateHeaderBasePosition.call ($header);
         // Events
-        $("canvas").click (DemStats._onCanvasClick);
-        if (!$("#isSmallScreen").is (":visible"))
+        $("canvas").click (_onCanvasClicked);
+        $header.mousemove (_onHeaderMouseMove).mouseout (_onHeaderMouseOut);
+        $window.scroll (_onWindowScroll).resize (_updateHeaderBasePosition);
+        if ($("#isSmallScreen").is (":visible"))
         {
-            $("#monthChart").on ("inview", function() { DemStats._onCanvasViewed.call (this); });
-            $("#dayChart").on ("inview", function() { DemStats._onCanvasViewed.call (this); });
-        } else {
-            $(".row-chart").css ({ opacity: 1 });
-            DemStats._drawGraph ("monthChart");
-            DemStats._drawGraph ("dayChart");
+            _drawGraphs ("monthChart", "dayChart");
+            // ensure that the animation overlays are hidden
+            $(".animation-overlay").hide();
         }
-        header.mousemove (DemStats._onHeaderMouseMove);
-        header.mouseout (DemStats._onHeaderMouseOut);
-        win.scroll (DemStats._onWindowScroll);
-        win.resize (DemStats._onWindowResize);
-    },
-    // Events
-    _onCanvasClick: function() {
-        var myself = $(this);
-        myself.parent().parent().find ("div").each (function() {
-            var elm = $(this);
-            if (elm.attr ('class').indexOf ("sub") > -1)
-                elm.toggleClass ("row-sub-floated", 400);
-            else
-                elm.toggleClass ("row-text-floated", 400);
+        else
+        {
+            $("#monthChart").on ("inview", function() {
+                // for some reason using directly _onCanvasViewed
+                // as the callback does not work
+                _onCanvasViewed.call (this);
+            });
+            $("#dayChart").on ("inview", _onCanvasViewed);
+        }
+    };
+    function _onCanvasClicked()
+    {
+        var $this = $(this), $parent = $this.parent();
+        // toggle the "-floated" class for each sibling of the canvas container
+        $parent.siblings ("div[class^='row']").add ($parent).each (function() {
+            var $sibling = $(this);
+            $sibling.toggleClass (
+                $sibling.attr ("class").indexOf ("sub") != -1 ?
+                    "row-sub-floated" :
+                    "row-text-floated",
+                400
+            );
         });
-        var old  = myself.width(),
-            flag = old == 400 ? "600px" : "400px";
-        DemStats._drawGraph (myself.attr ('id'), flag.replace ("px", ""));
-        myself.width (old); myself.height (old);
-        myself.animate ({ width: flag, height: flag }, 1000);
-    },
-    _onCanvasViewed: function() {
-        var chart = $(this);
-        chart.off ("inview");
-        chart.parent().parent().animate ( { opacity: 1 }, 1000);
-        setTimeout (function() {
-            DemStats._drawGraph (chart.attr ('id'));
-        }, 250);
-    },
-    _onHeaderMouseMove: function (evt) {
-        if (DemStats.intervalRunning)
-            DemStats.intervalRunning = false;
-        DemStats.mouseInteracting = true;
-        var pos           = DemStats._parseBgPosition ($("header").css ('background-position')),
-            viewableSizeX = 2000 - $(window).width(),
-            viewableSizeY = 1000 - $("header").outerHeight(),
-            multiplierX   = 0,
-            multiplierY   = 0;
-        if (evt.pageX < DemStats.header_lastX) multiplierX = -1;
-        else if (evt.pageX > DemStats.header_lastX) multiplierX = 1;
-        if (evt.pageY < DemStats.header_lastY) multiplierY = -1;
-        else if (evt.pageY > DemStats.header_lastY) multiplierY = 1;
-        var newXPos = pos.x + (2 * multiplierX),
-            newYPos = pos.y + (3 * multiplierY);
-        if (newXPos > 0 || newXPos < -viewableSizeX)
-            newXPos = pos.x;
-        if (newYPos > 0 || newYPos < -viewableSizeY)
-            newYPos = pos.y;
-        if (newXPos != pos.x || newYPos != pos.y)
-            $("header").css ('background-position', newXPos + "px " + newYPos + "px");
-        DemStats.header_lastX = evt.pageX;
-        DemStats.header_lastY = evt.pageY;
-    },
-    _onHeaderMouseOut: function() {
-        DemStats.mouseInteracting = false;
-        DemStats._simulateSmoothPositionChange ($(this), DemStats.baseHeaderPos);
-    },
-    _onWindowScroll: function() {
-        var header = $("header");
-        if (DemStats.intervalRunning || DemStats.mouseInteracting || $(window).scrollTop() > $("header").outerHeight())
-            return;
-        var pos = DemStats._parseBgPosition (header.css ('background-position'));
-        header.css ('background-position', pos.x + 'px -' + ($(window).scrollTop() / 2) + 'px');
-    },
-    _onWindowResize: function() {
-        DemStats.baseHeaderPos = -Math.round ((2000 - $(window).width()) / 2);
-        //DemStats._simulateSmoothPositionChange ($("header"), DemStats.baseHeaderPos);
-        $("header").css ('background-position', DemStats.baseHeaderPos + 'px 0');
-    },
-    // Misc functions
-    _drawGraph: function (id, size) {
-        var plain = JSON.parse ($("#chartdata-" + id).text()), _labels = [], _values = [], counter = 0;
-        for (var key in plain)
-        {
-            if (!plain.hasOwnProperty (key)) continue;
-            if (id == "dayChart")
-                _labels.push (key.substr (0, 2));
-            else
-                _labels.push (DemStats.months[parseInt (key.substr (0, 2)) - 1]);
-            _values.push (plain[key]);
-            if (++counter >= 13 && size != 600) break;
-        }
-        _labels.reverse(); _values.reverse();
-        var data = {
-            labels: _labels,
-            datasets: [
-                {
-                    fillColor: "rgba(151,187,205,0.5)",
-                    strokeColor: "rgba(151,187,205,1)",
-                    pointColor:  "rgba(151,187,205,1)",
-                    pointStrokeColor: "#fff",
-                    data: _values
-                }
-            ]
-        };
-        new Chart ($("#" + id).get (0).getContext ("2d"), size).Line (data);
-    },
-    _parseBgPosition: function (pos) {
-        var _arr = pos.split (' ');
-        return { x: parseInt (_arr[0].replace (/%|px/, '')), y: parseInt (_arr[1].replace (/%|px/, '')) };
-    },
-    _getSmoothSubtractor: function (pos, base, step) {
-        return ( pos > base ? ( pos < step ? -1 : -step ) : ( pos > -step ? -pos : step ));
-    },
-    _simulateSmoothPositionChange: function (element, baseX) {
-        var pos = this._parseBgPosition (element.css ('background-position'));
-        if (pos.x == baseX && pos.y == 0) return; // nothing to do
-        this.intervalRunning = true; // if set to false, the interval will stop running, for user interaction
-        var handler = setInterval (function() {
-            if (!DemStats.intervalRunning || (pos.x == baseX && pos.y == 0))
-            {
-                clearInterval (handler);
-                DemStats.intervalRunning = false;
-                return;
+        var old_size  = $this.width(),
+            new_size  = old_size == 400 ? 600 : 400;
+        $this.attr ({ width: new_size, height: new_size });
+        _drawGraphs ({ id: $this.attr ("id"), size: new_size });
+        $this.css ({ width: old_size, height: old_size }).animate ({
+            width: new_size,
+            height: new_size
+        }, {
+            duration: 1000,
+            complete: function() {
+                var $win    = $(window),
+                    wtop    = $win.scrollTop(),
+                    wbottom = wtop + $win.height(),
+                    ctop    = $this.offset().top,
+                    cbottom = ctop + new_size;
+                // perform the scroll animation ONLY if the canvas is not
+                // visible.
+                // we check if the canvas is visible knowing that
+                // scrollTop() is the highest part of the viewport, and
+                // scrollTop() + height() is the lowest part of the viewport.
+                // we can then check if the highest part of the viewport is
+                // less than the top of the canvas or if the lowest part of the
+                // viewport is bigger than the top of the canvas. repeat with
+                // the bottom of the canvas (by adding the canvas size to the
+                // top) and boom
+                if (new_size == 600 && (wtop > ctop || wbottom < ctop ||
+                    wtop > cbottom || wbottom < cbottom))
+                    $("html, body").animate ({
+                        scrollTop: $parent.prev().offset().top
+                    }, 500);
             }
-            if (pos.x != baseX)
-                pos.x += DemStats._getSmoothSubtractor (pos.x, baseX, 2);
-            if (pos.y != 0)
-                pos.y += DemStats._getSmoothSubtractor (pos.y, 0, 3);
-            element.css ('background-position', pos.x + 'px ' + pos.y + 'px');
-        }, 5);
+        });
     }
-};
+    function _onCanvasViewed()
+    {
+        // So I had to use a different method to animate the things
+        // because my Firefox has rendering problems with 'opacity' and
+        // canvas elements. It's painful.
+        var $chart = $(this).off ("inview");
+        $chart.parents (".row-chart").find (".animation-overlay").animate ({
+            backgroundColor: "transparent"
+        }, 500, function() {
+            $(this).hide();
+        });
+        setTimeout (function() {
+            _drawGraphs ($chart.attr ("id"));
+        }, 100);
+    }
+    function _onHeaderMouseMove (evt)
+    {
+        _header.animating = false, _header.mouseInteracting = true;
+        var $header       = $("header"),
+            viewableSizeX = 2000 - $(window).width(),
+            viewableSizeY = 1000 - $header.outerHeight(),
+            multiplierX   = evt.pageX < _header.lastX ? -1 : 1,
+            multiplierY   = evt.pageY < _header.lastY ? -1 : 1,
+            bgposition    = _parseBgPosition ($header),
+            newX          = bgposition.x + (2 * multiplierX),
+            newY          = bgposition.y + (3 * multiplierY);
+        if (newX > 0 || newX < -viewableSizeX) newX = bgposition.x;
+        if (newY > 0 || newY < -viewableSizeY) newY = bgposition.y;
+        if (newX != bgposition.x || newY != bgposition.y)
+            $header.css ("background-position", newX + "px " + newY + "px");
+        _header.lastX = evt.pageX, _header.lastY = evt.pageY;
+    }
+    function _onHeaderMouseOut()
+    {
+        _header.mouseInteracting = false;
+        _restoreHeaderPosition.call (this);
+    }
+    function _onWindowScroll()
+    {
+        var $header = $("header"), $win = $(window), pos;
+        if (_header.animating || _header.mouseInteracting ||
+            $win.scrollTop() > $header.outerHeight())
+            return;
+        pos = _parseBgPosition ($header);
+        $header.css ("background-position",
+            pos.x + "px -" + ($win.scrollTop() / 2) + "px");
+    }
+    function _drawGraphs()
+    {
+        for (var i = 0; i < arguments.length; i++)
+        {
+            var size = 400, id = arguments[i];
+            if (typeof id === "object")
+                size = id.size, id = id.id;
+            if (id in _drawnGraphs)
+                Chart.instances[_drawnGraphs[id]].destroy();
+            var data   = chartData[id], c = 0,
+                labels = [], values = [];
+            for (var key in data)
+            {
+                if (!data.hasOwnProperty (key)) continue;
+                if (/month/.test (id))
+                    // 01-2014 -> 01 -> MONTHS[0] -> January
+                    labels.unshift (MONTHS[parseInt (key.substr (0, 2)) - 1]);
+                else
+                    labels.unshift (key.substr (0, 2));
+                values.unshift (data[key]);
+                if (++c >= 13 && size != 600) break;
+            }
+            var result = {
+                labels: labels,
+                datasets: [
+                    {
+                        fillColor:   "rgba(151,187,205,0.5)",
+                        strokeColor: "rgba(151,187,205,1)",
+                        pointColor:  "rgba(151,187,205,1)",
+                        pointStrokeColor: "#fff",
+                        data: values
+                    }
+                ]
+            };
+            _drawnGraphs[id] = new Chart ($("#" + id).get(0).getContext ("2d"))
+                .Line (result).id;
+        }
+    }
+    function _parseBgPosition ($elm)
+    {
+        var ps = $elm.css ("background-position").split (" ").map (function(v){
+            return parseInt (v.replace (/%|px/, ""), 10);
+        });
+        return {
+            x: ps[0],
+            y: ps[1]
+        };
+    }
+    function _updateHeaderBasePosition()
+    {
+        _header.basePos = -Math.round ((2000 - $(window).width()) / 2);
+        $(this).css ("background-position", _header.basePos + "px 0");
+    }
+    function _restoreHeaderPosition()
+    {
+        var $this = $(this), pos = _parseBgPosition ($this);
+        if (pos.x === _header.basePos && pos.y === 0) return;
+        var $pos = $(pos);
+        _header.animating = true;
+        // Yes. I'm animating an object.
+        $pos.animate ({ x: _header.basePos, y: 0 }, {
+            duration: 500,
+            step: function() {
+                if (!_header.animating)
+                    return $pos.stop();
+                $this.css ("background-position",
+                    this.x + "px " + this.y + "px");
+            },
+            complete: function() {
+                // ensure that the final position is the one we want
+                $this.css ("background-position", _header.basePos + "px 0");
+                _header.animating = false;
+            }
+        });
+    }
+}(window.DemStats = window.DemStats || {}));
 
 $(document).ready (DemStats.onPageReady);
