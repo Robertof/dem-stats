@@ -226,10 +226,6 @@ $demstats->generateStats();
                 </div>
             </div>
         </div>
-        <div style="display: none">
-            <div id="chartdata-monthChart"><?=json_encode($demstats->getStats()->screenshots_per_month, JSON_HEX_TAG)?></div>
-            <div id="chartdata-dayChart"><?=json_encode($demstats->getStats()->screenshots_per_day, JSON_HEX_TAG)?></div>
-        </div>
         <span id="isSmallScreen"></span>
         <script type="application/javascript">
         var chartData = {
